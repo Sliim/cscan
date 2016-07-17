@@ -21,6 +21,13 @@ def lockFile(lockfile):
         f.close()
         return True
 
+def target_list(category):
+    dictionary = {
+        "network": "ips.txt",
+        "web": "websites.txt"
+    }
+    return dictionary[category]
+
 def main():
 
     lockf = ".lock.pod"
@@ -34,25 +41,22 @@ def main():
     #Parser argument in command line
     parser = argparse.ArgumentParser(description='continues scanning on Faraday')
     parser.add_argument('-p','--plugin', help='Scan only the following plugin ej: ./cscan.py -p nmap.sh', required=False)
+    parser.add_argument('-c','--category', help='Scan only for given category ej: ./cscan.py -c network', required=False)
     args = parser.parse_args()
 
-    for dirpath, dnames, fnames in os.walk("./scripts/web/"):
-        for f in  fnames:
-            if args.plugin and args.plugin != f:
-                continue
-            script = os.path.join(dirpath, f)
-            cmd = "%s websites.txt output/" % (script)
-            print "Running: %s" % cmd
-            proc = subprocess.call(cmd, shell=True, stdin=None, stderr=subprocess.PIPE,  env=dict(env))
-
-    for dirpath, dnames, fnames in os.walk("./scripts/network/"):
-        for f in  fnames:
-            if args.plugin and args.plugin != f:
-                continue
-            script = os.path.join(dirpath, f)
-            cmd = "%s ips.txt output/" % (script)
-            print "Running: %s" % cmd
-            proc = subprocess.call(cmd, shell=True, stdin=None, stderr=subprocess.PIPE, env=dict(env))
+    for category in env["CS_CATEGORIES"].split(","):
+        if args.category and args.category != category:
+            continue
+        for dirpath, dnames, fnames in os.walk("./scripts/" + category):
+            for f in  fnames:
+                if args.plugin and args.plugin != f:
+                    continue
+                if f not in env["CS_PLUGINS"].split(","):
+                    continue
+                script = os.path.join(dirpath, f)
+                cmd = "%s %s output/" % (script, target_list(category))
+                print "Running: %s" % cmd
+                proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
 
     #Remove lockfile           
     os.remove(lockf)
