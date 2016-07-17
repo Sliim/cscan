@@ -169,7 +169,7 @@ def main():
 
     wait_for_jobs()
 
-    if os.environ.get("CS_MSF_EXPORT") == "enabled":
+    if os.environ.get("CS_MSF_EXPORT") == "enabled" and args.output:
         export_workspace(console_id, args.output)
 
     client.call("console.write", [console_id, "set PROMPT msf\r\n"])
