@@ -38,5 +38,7 @@ config = {
             'CS_MSF_PORT' : '55553',
             'CS_MSF_USER' : 'msf',
             'CS_MSF_PASS' : 'msf',
+            'CS_MSF_TMP_WS' : 'True',
+            'CS_MSF_EXPORT' : 'True',
         }
 

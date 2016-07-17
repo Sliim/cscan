@@ -59,9 +59,22 @@ class Msfrpc:
 	    self.authenticated = True
             self.token = ret.get('token')
             return True
-        else:
+        else: 
             raise self.MsfAuthError("MsfRPC: Authentication failed")
 
+client = Msfrpc({"host": os.environ.get('CS_MSF_HOST'), "port": os.environ.get('CS_MSF_PORT')})
+
+def wait_for_jobs():
+    while True:
+        job_list = client.call('job.list', [])
+        print "Current jobs: %s (Total: %d)" % (",".join(job_list), len(job_list))
+        if len(job_list) > 0:
+            for j in job_list:
+                jinfo = client.call('job.info', [j])
+                print "%s - %s" % (jinfo["jid"], jinfo["name"])
+        else:
+            return true
+        time.sleep(10)
 
 def main():
     parser = argparse.ArgumentParser(description='msfrpc cscan plugin, for automated security testing')
@@ -70,18 +83,25 @@ def main():
     parser.add_argument('-r','--resource', help='Resource to execute', required=False)
     parser.add_argument('-O','--options', help='Modules options', required=False)
     parser.add_argument('-c','--command', help='Command to execute (check, run, exploit)', required=False, default="check")
+    parser.add_argument('-x','--xml', help='XML to import in temp workspace', required=False)
     args = parser.parse_args()    
     
-    client = Msfrpc({"host": os.environ.get('CS_MSF_HOST'), "port": os.environ.get('CS_MSF_PORT')})
     client.login(os.environ.get('CS_MSF_USER'), os.environ.get('CS_MSF_PASS'))
     current_ws = client.call('db.current_workspace')['workspace']
     tmp_ws = "cscan_" + ''.join(random.sample(string.lowercase,6))
 
     print "Current workspace: " + current_ws
-    print "Create %s workspace.. %s" % (tmp_ws, client.call('db.add_workspace',
-                                                            [tmp_ws])['result'])
-    print "Switch to new workspace.. %s" % client.call('db.set_workspace',
-                                                       [tmp_ws])['result']
+
+    if os.environ.get('CS_MSF_TMP_WS'):
+        print "Create %s workspace.. %s" % (tmp_ws, client.call('db.add_workspace',
+                                                                [tmp_ws])['result'])
+        print "Switch to new workspace.. %s" % client.call('db.set_workspace',
+                                                           [tmp_ws])['result']
+        if args.xml:
+            content = open(args.xml, 'r').read()
+            print "Importing data from %s.. %s" % (args.xml, client.call('db.import_data',
+                                                                         [{'workspace': tmp_ws,
+                                                                           'data': content}])['result'])
     if args.options:
         print "Options: \n" + args.options.replace(",", "\n")
     if args.modules:
@@ -121,23 +141,28 @@ def main():
             client.call('console.write', [console_id, "set PROMPT 'exporting>>'\r\n"])
             break
 
-    print "Exporting workspace.."
-    client.call('console.write', [console_id, "db_export " + args.output + "\nset PROMPT msf\r\n"])
+    wait_for_jobs()
 
-    while True:
-        time.sleep(5)
-        res = client.call('console.read', [console_id])
-        print "%s %s" % (res["prompt"], res['data'])
-        if 'Finished export' in res['data']:
-            break
+    if os.environ.get('CS_MSF_EXPORT'):
+        print "Exporting workspace.."
+        client.call('console.write', [console_id, "db_export " + args.output + "\nset PROMPT msf\r\n"])
+
+        while True:
+            time.sleep(5)
+            res = client.call('console.read', [console_id])
+            print "%s %s" % (res["prompt"], res['data'])
+            if 'Finished export' in res['data']:
+                break
 
     print "Destroy console ID %s.. %s" % (console_id,
                                           client.call('console.destroy',
                                                       [console_id])['result'])
-    print "Switch to %s workspace.. %s" % (current_ws,
-                                           client.call('db.set_workspace',
-                                                       [current_ws])['result'])
-    print "Delete %s workspace.. %s" % (tmp_ws, client.call('db.del_workspace', [tmp_ws])['result'])
+
+    if os.environ.get('CS_MSF_TMP_WS'):
+        print "Switch to %s workspace.. %s" % (current_ws,
+                                               client.call('db.set_workspace',
+                                                           [current_ws])['result'])
+        print "Delete %s workspace.. %s" % (tmp_ws, client.call('db.del_workspace', [tmp_ws])['result'])
 
 if __name__ == "__main__":
     main()
