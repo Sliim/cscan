@@ -110,24 +110,30 @@ def wait_for_jobs():
 def main():
     parser = argparse.ArgumentParser(description="msfrpc cscan plugin, for automated security testing")
     parser.add_argument("-o","--output", help="Output file", required=False)
+    parser.add_argument("-l","--log", help="Log file", required=False)
     parser.add_argument("-m","--modules", help="Modules to use", required=False)
     parser.add_argument("-r","--resource", help="Resource to execute", required=False)
     parser.add_argument("-O","--options", help="Modules options", required=False)
     parser.add_argument("-c","--command", help="Command to execute (check, run, exploit)", required=False, default="check")
     parser.add_argument("-x","--xml", help="XML to import in temp workspace", required=False)
+    parser.add_argument("-T","--disable-tmp-ws", help="Do not create temp workspace and use current", required=False)
     args = parser.parse_args()    
     
     client.login(os.environ.get("CS_MSF_USER"), os.environ.get("CS_MSF_PASS"))
     current_ws = client.call("db.current_workspace")["workspace"]
     tmp_ws = None
+    logfile = None
 
     print "Current workspace: " + current_ws
 
-    if os.environ.get("CS_MSF_TMP_WS") == "enabled":
-        tmp_ws = create_tmp_workspace()
-        if args.xml:
-            import_xml_data(tmp_ws, args.xml)
-            
+    if not args.disable_tmp_ws:
+        if os.environ.get("CS_MSF_TMP_WS") == "enabled":
+            tmp_ws = create_tmp_workspace()
+            if args.xml:
+                import_xml_data(tmp_ws, args.xml)
+
+    if args.disable_tmp_ws:
+        print "Temporary workspace disabled."
     if args.options:
         print "Options: \n" + args.options.replace(",", "\n")
     if args.modules:
@@ -135,7 +141,11 @@ def main():
     if args.resource:
         print "Resource: " + args.resource 
     print "Command: " + args.command
-    print "Output: " + args.output
+    if args.output:
+        print "Output: " + args.output
+    if args.log:
+        print "Log file: " + args.log
+        logfile = open(args.log, "a+")
 
     commands = []
     console_id = client.call("console.create", [{}])["id"]
@@ -162,10 +172,16 @@ def main():
     while True:
         time.sleep(2)
         res = client.call("console.read", [console_id])
-        print "%s %s" % (res["prompt"], res["data"])
+        if logfile:
+            logfile.write(str(res) + "\n")
+        else:
+            print str(res)
         if "command_deployed" in res["prompt"] and not res["busy"]:
             client.call("console.write", [console_id, "set PROMPT 'exporting>>'\r\n"])
             break
+
+    if logfile:
+        logfile.close()
 
     wait_for_jobs()
 
