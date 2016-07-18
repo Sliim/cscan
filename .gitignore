@@ -1,0 +1,9 @@
+/output
+/log
+/.lock.pod
+
+/msf.modules
+/nmap.xml
+
+/websites.txt
+/ips.txt
