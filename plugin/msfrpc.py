@@ -157,7 +157,7 @@ class CscanMsf:
             time.sleep(2)
             res = self.rpc_call("console.read", [self.cid])
             if res.get("data"):
-                self.log("%s %s" % (res.get("prompt"), res.get("data")), True)
+                self.log("%s %s" % (res.get("prompt"), res.get("data")))
             if "commands_deployed" in res["prompt"] and not res["busy"]:
                 self.rpc_call("console.write", [self.cid, "set PROMPT cscan\r\n"])
                 break
