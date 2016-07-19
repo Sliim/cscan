@@ -101,6 +101,7 @@ class CscanMsf:
     def create_console(self):
         self.cid = self.rpc_call("console.create", [{}], "id")
         self.rpc_call("console.read", [self.cid])
+        self.log("Created console ID " + str(self.cid), True)
         return self.cid
 
     def destroy_console(self):
@@ -149,7 +150,7 @@ class CscanMsf:
             time.sleep(10)
 
     def run_commands(self, commands):
-        self.log("Run command: %s" % "\n".join(commands), True)
+        self.log("Deploy following commands: \n%s" % " msf> " + "\n msf> ".join(commands), True)
         self.rpc_call("console.write", [self.cid, "\n".join(commands)])
         self.rpc_call("console.write", [self.cid, "set PROMPT commands_deployed\r\n"])
 
@@ -159,8 +160,43 @@ class CscanMsf:
             if res.get("data"):
                 self.log("%s %s" % (res.get("prompt"), res.get("data")))
             if "commands_deployed" in res["prompt"] and not res["busy"]:
-                self.rpc_call("console.write", [self.cid, "set PROMPT cscan\r\n"])
+                self.rpc_call("console.write", [self.cid, "set PROMPT msfcscan\r\n"])
                 break
+
+def banner(args, cws="unknown"):
+    return """   _____________________________________________________
+  |  ____  ___________________________________________  |
+  | | |  \/  |/  ___|  ___/  __ \                     | |
+  | | | .  . |\ `--.| |_  | /  \/___  ___ __ _ _ __   | |
+  | | | |\/| | `--. \  _| | |   / __|/ __/ _` | '_ \  | |
+  | | | |  | |/\__/ / |   | \__/\__ \ (_| (_| | | | | | |
+  | | \_|  |_/\____/\_|    \____/___/\___\__,_|_| |_| | |
+  | |  _____ ______ ______ _____ ______ ______ _____  | |
+  | | |_____|______|______|_____|______|______|_____| |_|
+  | |                        
+  | | Arguments:                 Current workspace: %s
+  | |  > Temp workspace: %s           
+  | |  > Quiet mode: %s
+  | |  > Command: %s
+  | |  > Resource: %s
+  | |  > Options: %s
+  | |  > Modules: %s
+  |_|  > XML import: %s
+       > Log file: %s
+       > Output file: %s
+
+""" % (
+    cws,
+    "enabled" if not args.disable_tmp_ws else "disabled",
+    "enabled" if args.quiet else "disabled",
+    args.command,
+    args.resource,
+    "\n  | |    --> " + args.options.replace(",", "\n  | |    --> ") if args.options else None,
+    "\n  | |    --> " + args.modules.replace(",", "\n  | |    --> ") if args.modules else None,
+    args.xml,
+    args.log,
+    args.output
+)
 
 def main():
     parser = argparse.ArgumentParser(description="msfrpc cscan plugin, for automated security testing")
@@ -171,38 +207,23 @@ def main():
     parser.add_argument("-O","--options", help="Modules options", required=False)
     parser.add_argument("-c","--command", help="Command to execute (check, run, exploit)", default="check")
     parser.add_argument("-x","--xml", help="XML to import in temp workspace", required=False)
-    parser.add_argument("-T","--disable-tmp-ws", help="Do not create temp workspace and use current", required=False)
+    parser.add_argument("-T","--disable-tmp-ws", help="Do not create temp workspace and use current", required=False, action="store_true")
     parser.add_argument("-q","--quiet", help="Quiet mode, set -l options to have log in a file", required=False, action="store_true")
-    args = parser.parse_args()    
 
-    cscan = CscanMsf(args.log if args.log else False,
-                     args.quiet if args.quiet else False)
+    args = parser.parse_args()    
+    cscan = CscanMsf(args.log, args.quiet)
+    commands = []
     tmp_ws = None
     current_ws = cscan.rpc_call("db.current_workspace", [], "workspace")
-    print "Current workspace: " + current_ws
+
+    print banner(args, current_ws)
+    cscan.create_console()
+    
     if not args.disable_tmp_ws and os.environ.get("CS_MSF_TMP_WS") == "enabled":
         tmp_ws = "cscan_" + "".join(random.sample(string.lowercase,6))
         cscan.create_ws(tmp_ws, True)
         if args.xml:
             cscan.import_xml_data(tmp_ws, args.xml)
-
-    if args.disable_tmp_ws:
-        print "Temporary workspace disabled."
-    if args.options:
-        print "Options: \n" + args.options.replace(",", "\n")
-    if args.modules:
-        print "Modules: \n" + args.modules.replace(",", "\n")
-    if args.resource:
-        print "Resource: " + args.resource 
-    print "Command: " + args.command
-    if args.output:
-        print "Output: " + args.output
-    if args.log:
-        print "Log file: " + args.log
-
-    commands = []
-    console_id = cscan.create_console()
-    print "Created console ID " + str(console_id)
 
     if args.options:
         for option in args.options.split(","):
@@ -218,8 +239,6 @@ def main():
     commands.append("\r\n")
     cscan.run_commands(commands)
     cscan.wait_for_jobs()
-    cscan.rpc_call("console.write", [console_id, "set PROMPT msf\r\n"])
-    time.sleep(1)
 
     if os.environ.get("CS_MSF_EXPORT") == "enabled" and args.output:
         cscan.export_current_ws(args.output)
