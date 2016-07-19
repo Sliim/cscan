@@ -87,6 +87,7 @@ class CscanMsf:
     def create_console(self):
         self.cid = self.rpc_call("console.create", [{}], "id")
         self.rpc_call("console.read", [self.cid])
+        return self.cid
 
     def destroy_console(self):
         print "Destroy console ID %s.. %s" % (self.cid, self.rpc_call("console.destroy",
@@ -95,18 +96,24 @@ class CscanMsf:
     def set_logfile(self, f):
         self.logfile = open(f, "a+")
 
-    def create_tmp_workspace(self):
-        ws = "cscan_" + "".join(random.sample(string.lowercase,6))
+    def create_ws(self, ws, switch=False):
         print "Create %s workspace.. %s" % (ws, self.rpc_call("db.add_workspace", [ws], "result"))
-        print "Switch to new workspace.. %s" % self.rpc_call("db.set_workspace", [ws], "result")
+        if switch:
+            self.set_ws(ws)
         return ws
+
+    def set_ws(self, ws):
+        print "Switch to new workspace.. %s" % self.rpc_call("db.set_workspace", [ws], "result")
+
+    def destroy_ws(self, ws):
+        print "Delete %s workspace.. %s" % (ws, self.rpc_call("db.del_workspace", [ws], "result"))
 
     def import_xml_data(self, ws, xml):
         content = open(xml, "r").read()
         print "Importing data from %s.. %s" % (xml, self.rpc_call("db.import_data", [{"workspace": ws,
                                                                                       "data": content}], "result"))
 
-    def export_workspace(self, out):
+    def export_current_ws(self, out):
         print "Exporting workspace.."
         self.rpc_call("console.write", [self.cid, "db_export %s\r\n" % out])
     
@@ -117,12 +124,7 @@ class CscanMsf:
                 print "%s %s" % (res.get("prompt"), res.get("data"))
             if "Finished export" in res.get("data"):
                 return True
-
-    def destroy_tmp_workspace(self, ws, new_ws):
-        print "Switch to %s workspace.. %s" % (new_ws, self.rpc_call("db.set_workspace",
-                                                                      [new_ws], "result"))
-        print "Delete %s workspace.. %s" % (ws, self.rpc_call("db.del_workspace", [ws], "result"))
-
+            
     def wait_for_jobs(self):
         while True:
             job_list = self.rpc_call("job.list", [])
@@ -176,11 +178,11 @@ def main():
     tmp_ws = None
 
     print "Current workspace: " + current_ws
-    if not args.disable_tmp_ws:
-        if os.environ.get("CS_MSF_TMP_WS") == "enabled":
-            tmp_ws = cscan.create_tmp_workspace()
-            if args.xml:
-                cscan.import_xml_data(tmp_ws, args.xml)
+    if not args.disable_tmp_ws and os.environ.get("CS_MSF_TMP_WS") == "enabled":
+        tmp_ws = "cscan_" + "".join(random.sample(string.lowercase,6))
+        cscan.create_ws(tmp_ws, True)
+        if args.xml:
+            cscan.import_xml_data(tmp_ws, args.xml)
 
     if args.disable_tmp_ws:
         print "Temporary workspace disabled."
@@ -217,12 +219,13 @@ def main():
     cscan.clean()
 
     if os.environ.get("CS_MSF_EXPORT") == "enabled" and args.output:
-        cscan.export_workspace(args.output)
+        cscan.export_current_ws(args.output)
 
     cscan.destroy_console()
 
     if tmp_ws:
-        cscan.destroy_tmp_workspace(tmp_ws, current_ws)
+        cscan.set_ws(current_ws)
+        cscan.destroy_ws(tmp_ws)
 
 if __name__ == "__main__":
     main()
