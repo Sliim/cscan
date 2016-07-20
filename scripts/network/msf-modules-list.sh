@@ -9,6 +9,9 @@ fi
 while read h; do
     NAME="msf_modules_list_$(date +%s).xml"
     echo "Run msfrpc plugin.."
-    ./plugin/msfrpc.py --output $(realpath $2$NAME) --modules $(sed ':a;N;$!ba;s/\n/,/g' $modules_file) --options RHOSTS=$h,RHOST=$h --command=run
+    ./plugin/msfrpc.py --output $(realpath $2$NAME) \
+                       --log $(realpath log/$NAME.log) \
+                       --modules $(sed ':a;N;$!ba;s/\n/,/g' $modules_file) \
+                       --options RHOSTS=$h,RHOST=$h \
+                       --command=run
 done <$1
-

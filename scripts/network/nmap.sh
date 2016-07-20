@@ -8,3 +8,5 @@
 NAME="nmap_$(date +%s).xml"
 ${CS_NMAP:=nmap} $CS_NMAP_ARGS -iL $1 -oX $2$NAME
 
+# This can be useful for some msfrpc scripts :^
+cp $NAME nmap.xml
