@@ -193,12 +193,12 @@ def banner(args, cws="unknown"):
 
 def main():
     parser = argparse.ArgumentParser(description="msfrpc cscan plugin, for automated security testing")
-    parser.add_argument("-H","--msfrpc-host", help="MSFRPC Host", required=False)
-    parser.add_argument("-P","--msfrpc-port", help="MSFRPC Port", required=False)
-    parser.add_argument("-u","--msfrpc-user", help="MSFRPC User", required=False)
-    parser.add_argument("-p","--msfrpc-pass", help="MSFRPC Pass", required=False)
-    parser.add_argument("-S","--msfrpc-ssl", help="MSFRPC SSL", required=False)
-    parser.add_argument("-U","--msfrpc-uri", help="MSFRPC URI", required=False)
+    parser.add_argument("-H","--msfrpc-host", help="Override MSFRPC_HOST envvar", required=False)
+    parser.add_argument("-P","--msfrpc-port", help="Override MSFRPC_PORT envvar", required=False)
+    parser.add_argument("-u","--msfrpc-user", help="Override MSFRPC_USER envvar", required=False)
+    parser.add_argument("-p","--msfrpc-pass", help="Override MSFRPC_PASS envvar", required=False)
+    parser.add_argument("-S","--msfrpc-ssl", help="Override MSFRPC_SSL envvar", required=False)
+    parser.add_argument("-U","--msfrpc-uri", help="Override MSFRPC_URI envvar", required=False)
     
     parser.add_argument("-o","--output", help="Output file", required=False)
     parser.add_argument("-l","--log", help="Log file", required=False)
