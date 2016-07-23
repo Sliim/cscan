@@ -42,8 +42,6 @@ class Msfrpc:
         if meth != "auth.login":
             if not self.authenticated:
                 raise self.MsfAuthError("MsfRPC: Not Authenticated")
-
-        if meth != "auth.login":
             opts.insert(0,self.token)
 
         opts.insert(0,meth)
@@ -63,16 +61,11 @@ class Msfrpc:
 
 class CscanMsf:
     """ msfrpc plugin for cscan """
-    def __init__(self, logfile=False, quiet=False):
+    def __init__(self, client, logfile=False, quiet=False):
         self.logfile = logfile
         self.cid = None
         self.quiet = quiet
-        try:
-            self.client = Msfrpc({"host": os.environ.get("CS_MSF_HOST"), "port": os.environ.get("CS_MSF_PORT")})
-            self.client.login(os.environ.get("CS_MSF_USER"), os.environ.get("CS_MSF_PASS"))
-            self.log("Logged in to msfrpc server. Token: %s" % self.client.token, True)
-        except:
-            self.log("ERROR: Cannot connect to server..", True)
+        self.client = client
 
     def check_auth(self):
         if not self.client or not self.client.authenticated:
@@ -200,18 +193,38 @@ def banner(args, cws="unknown"):
 
 def main():
     parser = argparse.ArgumentParser(description="msfrpc cscan plugin, for automated security testing")
+    parser.add_argument("-H","--msfrpc-host", help="MSFRPC Host", required=False)
+    parser.add_argument("-P","--msfrpc-port", help="MSFRPC Port", required=False)
+    parser.add_argument("-u","--msfrpc-user", help="MSFRPC User", required=False)
+    parser.add_argument("-p","--msfrpc-pass", help="MSFRPC Pass", required=False)
+    parser.add_argument("-S","--msfrpc-ssl", help="MSFRPC SSL", required=False)
+    parser.add_argument("-U","--msfrpc-uri", help="MSFRPC URI", required=False)
+    
     parser.add_argument("-o","--output", help="Output file", required=False)
     parser.add_argument("-l","--log", help="Log file", required=False)
+    parser.add_argument("-x","--xml", help="XML to import in temp workspace", required=False)
     parser.add_argument("-m","--modules", help="Modules to use", required=False)
     parser.add_argument("-r","--resource", help="Resource to execute", required=False)
     parser.add_argument("-O","--options", help="Modules options", required=False)
     parser.add_argument("-c","--command", help="Command to execute (check, run, exploit)", default="check")
-    parser.add_argument("-x","--xml", help="XML to import in temp workspace", required=False)
     parser.add_argument("-T","--disable-tmp-ws", help="Do not create temp workspace and use current", required=False, action="store_true")
     parser.add_argument("-q","--quiet", help="Quiet mode, set -l options to have log in a file", required=False, action="store_true")
 
-    args = parser.parse_args()    
-    cscan = CscanMsf(args.log, args.quiet)
+    args = parser.parse_args()
+    try:
+        client = Msfrpc({
+            "host": args.msfrpc_host if args.msfrpc_host else os.environ.get("MSFRPC_HOST"),
+            "port": args.msfrpc_port if args.msfrpc_port else os.environ.get("MSFRPC_PORT"),
+            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI"),
+            "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
+        })
+        client.login(args.msfrpc_user if args.msfrpc_user else os.environ.get("MSFRPC_USER"),
+                     args.msfrpc_pass if args.msfrpc_pass else os.environ.get("MSFRPC_PASS"))
+    except:
+        print "ERROR: Cannot connect to server.."
+        exit(1)
+
+    cscan = CscanMsf(client, args.log, args.quiet)
     commands = []
     tmp_ws = None
     current_ws = cscan.rpc_call("db.current_workspace", [], "workspace")

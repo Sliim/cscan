@@ -34,10 +34,6 @@ config = {
             'CS_NESSUS_PASS' : "nessus",
             'CS_NESSUS_PROFILE' : "Basic Network Scan",
             # MSFRPC
-            'CS_MSF_HOST' : '127.0.0.1',
-            'CS_MSF_PORT' : '55553',
-            'CS_MSF_USER' : 'msf',
-            'CS_MSF_PASS' : 'msf',
             'CS_MSF_TMP_WS' : 'enabled',
             'CS_MSF_EXPORT' : 'enabled',
         }
