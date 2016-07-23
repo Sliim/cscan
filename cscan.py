@@ -11,7 +11,8 @@ import argparse
 import time
 from pprint import pprint
 from config import config
-
+import requests
+        
 def lockFile(lockfile):
     if os.path.isfile(lockfile):
         return False
@@ -28,6 +29,10 @@ def target_list(category):
     }
     return dictionary[category]
 
+def mattermost_message(url, msg):
+    if url and msg:
+        requests.post(url, data={"payload": '{"text": "%s"}' % msg})
+        
 def main():
     lockf = ".lock.pod"
     if not lockFile(lockf):
@@ -41,6 +46,7 @@ def main():
     my_env = os.environ
     env = config.copy()
     env.update(my_env)
+    
     #Parser argument in command line
     parser = argparse.ArgumentParser(description='continues scanning on Faraday')
     parser.add_argument('-p','--plugin', help='Scan only the following plugin ej: ./cscan.py -p nmap.sh', required=False)
@@ -48,9 +54,13 @@ def main():
     parser.add_argument('-t','--targets', help='Choose a custom target list ej: ./cscan.py -t custom-list.txt', required=False)
     args = parser.parse_args()
 
+    if env["CS_MATTERMOST"]:
+        mattermost_message(env["CS_MATTERMOST"], "Starting CScan..")
+
     for category in env["CS_CATEGORIES"].split(","):
         if args.category and args.category != category:
             continue
+
         for dirpath, dnames, fnames in os.walk("./scripts/" + category):
             for f in  fnames:
                 if args.plugin and args.plugin != f:
@@ -63,9 +73,14 @@ def main():
                 else:
                     targets = target_list(category)
                 cmd = "%s %s output/" % (script, targets)
-                print "Running: %s" % cmd
+                print "Run command: %s" % cmd
+                if env["CS_MATTERMOST"]:
+                    mattermost_message(env["CS_MATTERMOST"], "Run script: %s\nTargets:\n```\n%s\n```\n" % (f, open(targets).read()))
                 proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
 
+    if env["CS_MATTERMOST"]:
+        mattermost_message(env["CS_MATTERMOST"], "CScan finished.")
+        
     #Remove lockfile           
     os.remove(lockf)
 

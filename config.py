@@ -6,6 +6,8 @@
 ###
 
 config = {
+            # Mattermost notifications
+            'CS_MATTERMOST': 'False',
             # Whitelists
             'CS_CATEGORIES': 'network,web',
             'CS_PLUGINS': 'nmap.sh,openvas.sh,nikto.sh,nessus.sh,w3af.sh',
