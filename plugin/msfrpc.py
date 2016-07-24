@@ -215,8 +215,8 @@ def main():
         client = Msfrpc({
             "host": args.msfrpc_host if args.msfrpc_host else os.environ.get("MSFRPC_HOST"),
             "port": args.msfrpc_port if args.msfrpc_port else os.environ.get("MSFRPC_PORT"),
-            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI"),
-            "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
+            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI")
+            # FIXME: SSL cause some troubles, need investigations: "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
         })
         client.login(args.msfrpc_user if args.msfrpc_user else os.environ.get("MSFRPC_USER"),
                      args.msfrpc_pass if args.msfrpc_pass else os.environ.get("MSFRPC_PASS"))
