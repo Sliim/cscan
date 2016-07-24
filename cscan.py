@@ -11,7 +11,6 @@ import argparse
 import time
 from pprint import pprint
 from config import config
-import requests
         
 def lockFile(lockfile):
     if os.path.isfile(lockfile):
@@ -29,9 +28,18 @@ def target_list(category):
     }
     return dictionary[category]
 
-def mattermost_message(url, msg):
+def mattermost_message(url, msg, username=None, icon_url=None):
     if url and msg:
-        requests.post(url, data={"payload": '{"text": "%s"}' % msg})
+        import json
+        import requests
+        payload = { "text": msg }
+        if username:
+            payload["username"] = username
+        if icon_url:
+            payload["icon_url"] = icon_url
+        
+        requests.post(url,
+                      data={"payload": json.dumps(payload)})
         
 def main():
     lockf = ".lock.pod"
@@ -54,8 +62,12 @@ def main():
     parser.add_argument('-t','--targets', help='Choose a custom target list ej: ./cscan.py -t custom-list.txt', required=False)
     args = parser.parse_args()
 
+    mm_url = False
     if env["CS_MATTERMOST"]:
-        mattermost_message(env["CS_MATTERMOST"], "Starting CScan..")
+        mm_url = env["CS_MATTERMOST"]
+        mm_username = env["CS_MATTERMOST_USERNAME"] if "CS_MATTERMOST_USERNAME" in env else None
+        mm_icon_url = env["CS_MATTERMOST_ICON_URL"] if "CS_MATTERMOST_ICON_URL" in env else None
+        mattermost_message(mm_url, "Starting CScan..", mm_username, mm_icon_url)
 
     for category in env["CS_CATEGORIES"].split(","):
         if args.category and args.category != category:
@@ -74,12 +86,12 @@ def main():
                     targets = target_list(category)
                 cmd = "%s %s output/" % (script, targets)
                 print "Run command: %s" % cmd
-                if env["CS_MATTERMOST"]:
-                    mattermost_message(env["CS_MATTERMOST"], "Run script: %s\nTargets:\n```\n%s\n```\n" % (f, open(targets).read()))
+                if mm_url:
+                    mattermost_message(mm_url, "Run script: %s\nTargets:\n```\n%s\n```\n" % (f, open(targets).read()), mm_username, mm_icon_url)
                 proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
 
-    if env["CS_MATTERMOST"]:
-        mattermost_message(env["CS_MATTERMOST"], "CScan finished.")
+    if mm_url:
+        mattermost_message(mm_url, "CScan finished.", mm_username, mm_icon_url)
         
     #Remove lockfile           
     os.remove(lockf)
