@@ -193,12 +193,12 @@ def banner(args, cws="unknown"):
 
 def main():
     parser = argparse.ArgumentParser(description="msfrpc cscan plugin, for automated security testing")
-    parser.add_argument("-H","--msfrpc-host", help="MSFRPC Host", required=False)
-    parser.add_argument("-P","--msfrpc-port", help="MSFRPC Port", required=False)
-    parser.add_argument("-u","--msfrpc-user", help="MSFRPC User", required=False)
-    parser.add_argument("-p","--msfrpc-pass", help="MSFRPC Pass", required=False)
-    parser.add_argument("-S","--msfrpc-ssl", help="MSFRPC SSL", required=False)
-    parser.add_argument("-U","--msfrpc-uri", help="MSFRPC URI", required=False)
+    parser.add_argument("-H","--msfrpc-host", help="Override MSFRPC_HOST envvar", required=False)
+    parser.add_argument("-P","--msfrpc-port", help="Override MSFRPC_PORT envvar", required=False)
+    parser.add_argument("-u","--msfrpc-user", help="Override MSFRPC_USER envvar", required=False)
+    parser.add_argument("-p","--msfrpc-pass", help="Override MSFRPC_PASS envvar", required=False)
+    parser.add_argument("-S","--msfrpc-ssl", help="Override MSFRPC_SSL envvar", required=False)
+    parser.add_argument("-U","--msfrpc-uri", help="Override MSFRPC_URI envvar", required=False)
     
     parser.add_argument("-o","--output", help="Output file", required=False)
     parser.add_argument("-l","--log", help="Log file", required=False)
@@ -215,8 +215,8 @@ def main():
         client = Msfrpc({
             "host": args.msfrpc_host if args.msfrpc_host else os.environ.get("MSFRPC_HOST"),
             "port": args.msfrpc_port if args.msfrpc_port else os.environ.get("MSFRPC_PORT"),
-            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI"),
-            "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
+            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI")
+            # FIXME: SSL cause some troubles, need investigations: "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
         })
         client.login(args.msfrpc_user if args.msfrpc_user else os.environ.get("MSFRPC_USER"),
                      args.msfrpc_pass if args.msfrpc_pass else os.environ.get("MSFRPC_PASS"))
