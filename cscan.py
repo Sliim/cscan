@@ -20,12 +20,18 @@ def lockFile(lockfile):
         f.close()
         return True
 
-def target_list(category):
+def target_list(script):
     dictionary = {
         "network": "ips.txt",
         "web": "websites.txt",
         "extra": "ips.txt"
     }
+
+    category = 'network'
+    for path in os.environ["PATH"].split(os.pathsep):
+        if os.path.exists(os.path.join(path, script)):
+            category = os.path.join(path)[1]
+
     return dictionary[category]
 
 def main():
@@ -41,32 +47,35 @@ def main():
     my_env = os.environ
     env = config.copy()
     env.update(my_env)
-    #Parser argument in command line
+
     parser = argparse.ArgumentParser(description='continues scanning on Faraday')
-    parser.add_argument('-p','--plugin', help='Scan only the following plugin ej: ./cscan.py -p nmap.sh', required=False)
+    parser.add_argument('-s','--script', help='Scan only the following script ej: ./cscan.py -p nmap.sh', required=False)
+    parser.add_argument('-S','--scripts', help='Scan the following scripts list ej: ./cscan.py -p nmap.sh,nikto.sh', required=False)
     parser.add_argument('-c','--category', help='Scan only for given category ej: ./cscan.py -c network', required=False)
     parser.add_argument('-t','--targets', help='Choose a custom target list ej: ./cscan.py -t custom-list.txt', required=False)
     args = parser.parse_args()
 
-    for category in env["CS_CATEGORIES"].split(","):
-        if args.category and args.category != category:
-            continue
-        for dirpath, dnames, fnames in os.walk("./scripts/" + category):
-            for f in  fnames:
-                if args.plugin and args.plugin != f:
-                    continue
-                if not args.plugin and f not in env["CS_PLUGINS"].split(","):
-                    continue
-                script = os.path.join(dirpath, f)
-                if args.targets:
-                    targets = args.targets
-                else:
-                    targets = target_list(category)
-                cmd = "%s %s output/" % (script, targets)
-                print "Running: %s" % cmd
-                proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
+    if args.script:
+        scripts = [args.script]
+    elif args.scripts:
+        scripts = args.scripts.split(",")
+    else:
+        scripts = env["CS_PLUGINS"].split(",")
 
-    #Remove lockfile           
+    for category in env["CS_CATEGORIES"].split(","):
+        env["PATH"] += ":%s" % os.path.abspath("./scripts/" + category)
+
+    for script in scripts:
+        if args.targets:
+            targets = args.targets
+        else:
+            targets = target_list(script)
+
+        cmd = "%s %s output/ log/" % (script, targets)
+        print "Running: %s" % cmd
+        proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
+
+    #Remove lockfile
     os.remove(lockf)
 
 if __name__ == "__main__":

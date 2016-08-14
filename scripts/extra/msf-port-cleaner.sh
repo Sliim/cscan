@@ -9,9 +9,8 @@ fi
 NAME="$(date +%s)-$(basename $0)"
 echo "Run msfrpc plugin.."
 ./plugin/msfrpc.py --output $(realpath $2$NAME.xml) \
-                   --log $(realpath $3$NAME.log) \
-                   --xml $xml \
-                   --resource auto_brute.rc \
-                   --options THREADS=100
+                   --log $(realpath $3$NAME.log)
+                   --resource port_cleaner.rc \
+                   --xml $xml
 
 cp $2$NAME.xml $xml
