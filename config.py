@@ -6,9 +6,9 @@
 ###
 
 config = {
-            # Whitelists
+            #Default setup
             'CS_CATEGORIES': 'network,web',
-            'CS_PLUGINS': 'nmap.sh,openvas.sh,nikto.sh,nessus.sh,w3af.sh',
+            'CS_SCRIPTS': 'nmap.sh,openvas.sh,nikto.sh,nessus.sh,w3af.sh',
             #NMAP
             'CS_NMAP' : "nmap",
             'CS_NMAP_ARGS' : "-O",

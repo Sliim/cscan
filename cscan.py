@@ -60,7 +60,7 @@ def main():
     elif args.scripts:
         scripts = args.scripts.split(",")
     else:
-        scripts = env["CS_PLUGINS"].split(",")
+        scripts = env["CS_SCRIPTS"].split(",")
 
     for category in env["CS_CATEGORIES"].split(","):
         env["PATH"] += ":%s" % os.path.abspath("./scripts/" + category)
