@@ -19,7 +19,7 @@ class Msfrpc:
     class MsfAuthError(MsfError):
         def __init__(self,msg):
             self.msg = msg
-    
+
     def __init__(self,opts=[]):
         self.host = opts.get("host") or "127.0.0.1"
         self.port = opts.get("port") or 55552
@@ -32,7 +32,7 @@ class Msfrpc:
             self.client = httplib.HTTPSConnection(self.host,self.port)
         else:
             self.client = httplib.HTTPConnection(self.host,self.port)
- 
+
     def encode(self,data):
         return msgpack.packb(data)
     def decode(self,data):
@@ -48,15 +48,15 @@ class Msfrpc:
         params = self.encode(opts)
         self.client.request("POST",self.uri,params,self.headers)
         resp = self.client.getresponse()
-        return self.decode(resp.read()) 
-  
+        return self.decode(resp.read())
+
     def login(self,user,password):
         ret = self.call("auth.login",[user,password])
         if ret.get("result") == "success":
 	    self.authenticated = True
             self.token = ret.get("token")
             return True
-        else: 
+        else:
             raise self.MsfAuthError("MsfRPC: Authentication failed")
 
 class CscanMsf:
@@ -86,8 +86,8 @@ class CscanMsf:
             res = self.client.call(meth, opts)
 
             if "error" in res:
-                self.log("ERROR: %s %s" % (res["error_code"], res["error_message"]), True)
-                self.log("%s: %s\n%s" % (res["error_class"], res["error_string"], res["error_backtrace"]))
+                self.log("ERROR: %s %s" % (res.get("error_code"), res.get("error_message")), True)
+                self.log("%s: %s\n%s" % (res.get("error_class"), res.get("error_string"), res.get("error_backtrace")))
                 return res
             return res if not key else res.get(key)
 
@@ -121,7 +121,7 @@ class CscanMsf:
     def export_current_ws(self, out):
         self.log("Exporting workspace..", True)
         self.rpc_call("console.write", [self.cid, "db_export %s\r\n" % out])
-    
+
         while True:
             time.sleep(5)
             res = self.rpc_call("console.read", [self.cid])
@@ -129,7 +129,7 @@ class CscanMsf:
                 self.log("%s %s" % (res.get("prompt"), res.get("data")))
             if "Finished export" in res.get("data"):
                 return True
-            
+
     def wait_for_jobs(self):
         while True:
             job_list = self.rpc_call("job.list", [])
@@ -166,9 +166,9 @@ def banner(args, cws="unknown"):
   | | \_|  |_/\____/\_|    \____/___/\___\__,_|_| |_| | |
   | |  _____ ______ ______ _____ ______ ______ _____  | |
   | | |_____|______|______|_____|______|______|_____| |_|
-  | |                        
+  | |
   | | Arguments:                 Current workspace: %s
-  | |  > Temp workspace: %s           
+  | |  > Temp workspace: %s
   | |  > Quiet mode: %s
   | |  > Command: %s
   | |  > Resource: %s
@@ -184,7 +184,7 @@ def banner(args, cws="unknown"):
     "enabled" if args.quiet else "disabled",
     args.command,
     args.resource,
-    "\n  | |    --> " + args.options.replace(",", "\n  | |    --> ") if args.options else None,
+    "\n  | |    --> " + args.options.replace(":", "\n  | |    --> ") if args.options else None,
     "\n  | |    --> " + args.modules.replace(",", "\n  | |    --> ") if args.modules else None,
     args.xml,
     args.log,
@@ -199,7 +199,7 @@ def main():
     parser.add_argument("-p","--msfrpc-pass", help="Override MSFRPC_PASS envvar", required=False)
     parser.add_argument("-S","--msfrpc-ssl", help="Override MSFRPC_SSL envvar", required=False)
     parser.add_argument("-U","--msfrpc-uri", help="Override MSFRPC_URI envvar", required=False)
-    
+
     parser.add_argument("-o","--output", help="Output file", required=False)
     parser.add_argument("-l","--log", help="Log file", required=False)
     parser.add_argument("-x","--xml", help="XML to import in temp workspace", required=False)
@@ -231,7 +231,7 @@ def main():
 
     print banner(args, current_ws)
     cscan.create_console()
-    
+
     if not args.disable_tmp_ws and os.environ.get("CS_MSF_TMP_WS") == "enabled":
         tmp_ws = "cscan_" + "".join(random.sample(string.lowercase,6))
         cscan.create_ws(tmp_ws, True)
@@ -239,7 +239,7 @@ def main():
             cscan.import_xml_data(tmp_ws, args.xml)
 
     if args.options:
-        for option in args.options.split(","):
+        for option in args.options.split(":"):
             commands.append("setg " + option.replace("=", " "))
     if args.modules:
         for module in args.modules.split(","):
@@ -264,4 +264,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
