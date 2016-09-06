@@ -20,7 +20,7 @@ def lockFile(lockfile):
         f.close()
         return True
 
-def target_list(script):
+def target_list(script, categories):
     dictionary = {
         "network": "ips.txt",
         "web": "websites.txt",
@@ -28,11 +28,9 @@ def target_list(script):
     }
 
     category = 'network'
-    for path in os.environ["PATH"].split(os.pathsep):
-        if os.path.exists(os.path.join(path, script)):
-            category = os.path.join(path)[1]
-
-    return dictionary[category]
+    for c in categories:
+        if os.path.exists(os.path.join('scripts', c, script)):
+            return dictionary[c]
 
 def main():
     lockf = ".lock.pod"
@@ -62,14 +60,15 @@ def main():
     else:
         scripts = env["CS_SCRIPTS"].split(",")
 
-    for category in env["CS_CATEGORIES"].split(","):
+    categories = env["CS_CATEGORIES"].split(",")
+    for category in categories:
         env["PATH"] += ":%s" % os.path.abspath("./scripts/" + category)
 
     for script in scripts:
         if args.targets:
             targets = args.targets
         else:
-            targets = target_list(script)
+            targets = target_list(script, categories)
 
         cmd = "%s %s output/ log/" % (script, targets)
         print "Running: %s" % cmd
