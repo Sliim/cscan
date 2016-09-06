@@ -94,7 +94,7 @@ def main():
         cmd = "%s %s output/ log/" % (script, targets)
         print "Running: %s" % cmd
         if mm_url:
-            mattermost_message(mm_url, "Run script: %s\nTargets:\n```\n%s\n```\n" % (f, open(targets).read()), mm_username, mm_icon_url)
+            mattermost_message(mm_url, "Run script: %s\nTargets:\n```\n%s\n```\n" % (script, open(targets).read()), mm_username, mm_icon_url)
         proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
 
     if mm_url:
