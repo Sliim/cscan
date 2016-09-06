@@ -38,10 +38,6 @@ def main():
         print "You can run only one instance of cscan (%s)" % lockf
         exit(0)
 
-    for d in ["log", "output"]:
-        if not os.path.isdir(d):
-            os.makedirs(d)
-
     my_env = os.environ
     env = config.copy()
     env.update(my_env)
@@ -51,7 +47,22 @@ def main():
     parser.add_argument('-S','--scripts', help='Scan the following scripts list ej: ./cscan.py -p nmap.sh,nikto.sh', required=False)
     parser.add_argument('-c','--category', help='Scan only for given category ej: ./cscan.py -c network', required=False)
     parser.add_argument('-t','--targets', help='Choose a custom target list ej: ./cscan.py -t custom-list.txt', required=False)
+    parser.add_argument('-o','--output', help='Choose a custom output directory', required=False)
+    parser.add_argument('-l','--log', help='Choose a custom log directory', required=False)
     args = parser.parse_args()
+
+    output = 'output/'
+    if args.output:
+        output = args.output
+
+    logdir = 'log/'
+    if args.log:
+        logdir = args.log
+
+    for d in [logdir, output]:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+
 
     if args.script:
         scripts = [args.script]
@@ -70,7 +81,7 @@ def main():
         else:
             targets = target_list(script, categories)
 
-        cmd = "%s %s output/ log/" % (script, targets)
+        cmd = "%s %s %s %s" % (script, targets, output, logdir)
         print "Running: %s" % cmd
         proc = subprocess.call(cmd, shell=True, stdin=None, env=dict(env))
 
