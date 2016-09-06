@@ -20,7 +20,7 @@ def lockFile(lockfile):
         f.close()
         return True
 
-def target_list(script):
+def target_list(script, categories):
     dictionary = {
         "network": "ips.txt",
         "web": "websites.txt",
@@ -28,11 +28,9 @@ def target_list(script):
     }
 
     category = 'network'
-    for path in os.environ["PATH"].split(os.pathsep):
-        if os.path.exists(os.path.join(path, script)):
-            category = os.path.join(path)[1]
-
-    return dictionary[category]
+    for c in categories:
+        if os.path.exists(os.path.join('scripts', c, script)):
+            return dictionary[c]
 
 def mattermost_message(url, msg, username=None, icon_url=None):
     if url and msg:
@@ -53,10 +51,6 @@ def main():
         print "You can run only one instance of cscan (%s)" % lockf
         exit(0)
 
-    for d in ["log", "output"]:
-        if not os.path.isdir(d):
-            os.makedirs(d)
-
     my_env = os.environ
     env = config.copy()
     env.update(my_env)
@@ -66,6 +60,8 @@ def main():
     parser.add_argument('-S','--scripts', help='Scan the following scripts list ej: ./cscan.py -p nmap.sh,nikto.sh', required=False)
     parser.add_argument('-c','--category', help='Scan only for given category ej: ./cscan.py -c network', required=False)
     parser.add_argument('-t','--targets', help='Choose a custom target list ej: ./cscan.py -t custom-list.txt', required=False)
+    parser.add_argument('-o','--output', help='Choose a custom output directory', required=False)
+    parser.add_argument('-l','--log', help='Choose a custom log directory', required=False)
     args = parser.parse_args()
 
     mm_url = False
@@ -75,6 +71,18 @@ def main():
         mm_icon_url = env["CS_MATTERMOST_ICON_URL"] if "CS_MATTERMOST_ICON_URL" in env else None
         mattermost_message(mm_url, "Starting CScan..", mm_username, mm_icon_url)
 
+    output = 'output/'
+    if args.output:
+        output = args.output
+
+    logdir = 'log/'
+    if args.log:
+        logdir = args.log
+
+    for d in [logdir, output]:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+
     if args.script:
         scripts = [args.script]
     elif args.scripts:
@@ -82,16 +90,17 @@ def main():
     else:
         scripts = env["CS_SCRIPTS"].split(",")
 
-    for category in env["CS_CATEGORIES"].split(","):
+    categories = env["CS_CATEGORIES"].split(",")
+    for category in categories:
         env["PATH"] += ":%s" % os.path.abspath("./scripts/" + category)
 
     for script in scripts:
         if args.targets:
             targets = args.targets
         else:
-            targets = target_list(script)
+            targets = target_list(script, categories)
 
-        cmd = "%s %s output/ log/" % (script, targets)
+        cmd = "%s %s %s %s" % (script, targets, output, logdir)
         print "Running: %s" % cmd
         if mm_url:
             mattermost_message(mm_url, "Run script: %s\nTargets:\n```\n%s\n```\n" % (script, open(targets).read()), mm_username, mm_icon_url)
