@@ -12,7 +12,7 @@ echo "Run msfrpc plugin.."
 		           --log $(realpath $3$NAME.log) \
 		           --xml $xml \
 		           --resource $(realpath scripts/resources/autoscan.rc) \
-		           --options THREADS=100:BLACKLIST=scanner/telnet/brocade_enable_login,scanner/rogue/rogue_recv \
+		           --options MAX_LEN=100:THREADS=100:BLACKLIST=scanner/telnet/brocade_enable_login,scanner/rogue/rogue_recv \
 		           --quiet
 
 cp $2$NAME.xml $xml
