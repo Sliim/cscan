@@ -7,6 +7,7 @@ import random
 import argparse
 import msgpack
 import httplib
+import ssl
 
 class Msfrpc:
     """ Msfrpc class from https://github.com/SpiderLabs/msfrpc """
@@ -29,7 +30,7 @@ class Msfrpc:
         self.token = False
         self.headers = {"Content-type" : "binary/message-pack" }
         if self.ssl:
-            self.client = httplib.HTTPSConnection(self.host,self.port)
+            self.client = httplib.HTTPSConnection(self.host,self.port, context=ssl._create_unverified_context())
         else:
             self.client = httplib.HTTPConnection(self.host,self.port)
 
@@ -197,7 +198,7 @@ def main():
     parser.add_argument("-P","--msfrpc-port", help="Override MSFRPC_PORT envvar", required=False)
     parser.add_argument("-u","--msfrpc-user", help="Override MSFRPC_USER envvar", required=False)
     parser.add_argument("-p","--msfrpc-pass", help="Override MSFRPC_PASS envvar", required=False)
-    parser.add_argument("-S","--msfrpc-ssl", help="Override MSFRPC_SSL envvar", required=False)
+    parser.add_argument("-S","--msfrpc-ssl", help="Override MSFRPC_SSL envvar", required=False, action="store_true")
     parser.add_argument("-U","--msfrpc-uri", help="Override MSFRPC_URI envvar", required=False)
 
     parser.add_argument("-o","--output", help="Output file", required=False)
@@ -215,8 +216,8 @@ def main():
         client = Msfrpc({
             "host": args.msfrpc_host if args.msfrpc_host else os.environ.get("MSFRPC_HOST"),
             "port": args.msfrpc_port if args.msfrpc_port else os.environ.get("MSFRPC_PORT"),
-            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI")
-            # FIXME: SSL cause some troubles, need investigations: "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL")
+            "uri": args.msfrpc_uri if args.msfrpc_uri else os.environ.get("MSFRPC_URI"),
+            "ssl": args.msfrpc_ssl if args.msfrpc_ssl else os.environ.get("MSFRPC_SSL") == 'true'
         })
         client.login(args.msfrpc_user if args.msfrpc_user else os.environ.get("MSFRPC_USER"),
                      args.msfrpc_pass if args.msfrpc_pass else os.environ.get("MSFRPC_PASS"))
