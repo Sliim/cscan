@@ -12,6 +12,6 @@ echo "Run msfrpc plugin.."
 		           --log $(realpath $3$NAME.log) \
 		           --xml $xml \
 		           --resource $(realpath scripts/resources/autosploit.rc) \
-		           --options THREADS=100:TARGET_PLATFORM=aix,android,bsdi,dialup,firefox,freebsd,hpux,irix,linux,mainframe,multi,netware,solaris,unix:BLACKLIST=freebsd/samba/trans2open,linux/samba/trans2open,osx/samba/trans2open,solaris/samba/trans2open
+		           --options THREADS=100:TARGET_PLATFORM=aix,android,bsdi,dialup,firefox,freebsd,hpux,irix,linux,mainframe,multi,netware,solaris,unix,windows:BLACKLIST=freebsd/samba/trans2open,linux/samba/trans2open,osx/samba/trans2open,solaris/samba/trans2open
 
 cp $2$NAME.xml $xml
