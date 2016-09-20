@@ -49,6 +49,12 @@ framework.db.hosts.each do |host|
   framework.modules.exploits.each do |name, mod|
     next if not framework.datastore['TARGET_PLATFORM'].split(',').include? name.split('/')[0]
     next if blacklist.include? name
+
+    # TODO Improve platform detection / exploit selection
+    if host.os_name
+      next if name.split('/')[0] == 'windows' && ! host.os_name.match(/Windows/)
+      next if name.split('/')[0] != 'windows' && host.os_name.match(/Windows/)
+    end
     next unless mod
     m = mod.new
     next unless m.datastore.has_key? 'RPORT'
