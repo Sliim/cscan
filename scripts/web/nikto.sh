@@ -7,5 +7,4 @@
 while read h; do
     NAME="nikto_$(date +%s).xml"
     ${CS_NIKTO:=nikto} $CS_NIKTO_ARGS -host $h -output $2$NAME -Format XML
-    sleep 5s
 done <$1

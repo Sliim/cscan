@@ -63,7 +63,6 @@ def main():
         if not os.path.isdir(d):
             os.makedirs(d)
 
-
     if args.script:
         scripts = [args.script]
     elif args.scripts:
